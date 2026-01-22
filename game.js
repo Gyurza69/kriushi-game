@@ -1787,3 +1787,56 @@ class NovelGame {
 
 // Запуск игры
 const game = new NovelGame();
+
+// iOS тестовая кнопка
+const iosTestBtn = document.getElementById('iosTestBtn');
+const testAudio = document.getElementById('testAudio');
+
+if (iosTestBtn) {
+    iosTestBtn.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+
+        // Способ 1: HTML5 Audio
+        if (testAudio) {
+            testAudio.currentTime = 0;
+            testAudio.volume = 1.0;
+            const playPromise = testAudio.play();
+            if (playPromise) {
+                playPromise.then(() => {
+                    console.log('[TEST] HTML5 Audio играет!');
+                    iosTestBtn.textContent = '✅ HTML5 Audio OK!';
+                    iosTestBtn.style.background = '#22c55e';
+                }).catch(err => {
+                    console.log('[TEST] HTML5 Audio ошибка:', err);
+                    iosTestBtn.textContent = '❌ HTML5: ' + err.message;
+                });
+            }
+        }
+
+        // Способ 2: Web Audio API
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AudioContext();
+            ctx.resume().then(() => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.frequency.value = 440;
+                gain.gain.value = 0.5;
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.5);
+                console.log('[TEST] Web Audio играет! State:', ctx.state);
+            });
+        } catch(e) {
+            console.log('[TEST] Web Audio ошибка:', e);
+        }
+    }, { passive: false });
+
+    iosTestBtn.addEventListener('click', function() {
+        // Fallback для не-touch устройств
+        if (testAudio) {
+            testAudio.play().catch(e => console.log(e));
+        }
+    });
+}
