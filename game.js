@@ -1793,50 +1793,77 @@ const iosTestBtn = document.getElementById('iosTestBtn');
 const testAudio = document.getElementById('testAudio');
 
 if (iosTestBtn) {
-    iosTestBtn.addEventListener('touchstart', function(e) {
-        e.preventDefault();
+    const runTest = function() {
+        // Вибрация чтобы понять что нажатие сработало
+        if (navigator.vibrate) {
+            navigator.vibrate(100);
+        }
+
+        iosTestBtn.textContent = '⏳ Тестирую...';
+        iosTestBtn.style.background = '#f59e0b';
+
+        let status = [];
 
         // Способ 1: HTML5 Audio
         if (testAudio) {
             testAudio.currentTime = 0;
             testAudio.volume = 1.0;
-            const playPromise = testAudio.play();
-            if (playPromise) {
-                playPromise.then(() => {
-                    console.log('[TEST] HTML5 Audio играет!');
-                    iosTestBtn.textContent = '✅ HTML5 Audio OK!';
-                    iosTestBtn.style.background = '#22c55e';
-                }).catch(err => {
-                    console.log('[TEST] HTML5 Audio ошибка:', err);
-                    iosTestBtn.textContent = '❌ HTML5: ' + err.message;
-                });
-            }
+            testAudio.play().then(() => {
+                status.push('HTML5:OK');
+                updateStatus();
+            }).catch(err => {
+                status.push('HTML5:' + err.name);
+                updateStatus();
+            });
         }
 
         // Способ 2: Web Audio API
         try {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             const ctx = new AudioContext();
+
+            status.push('Ctx:' + ctx.state);
+
             ctx.resume().then(() => {
+                status.push('Resume:' + ctx.state);
+
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.frequency.value = 440;
-                gain.gain.value = 0.5;
+                gain.gain.value = 1.0; // Максимальная громкость
                 osc.connect(gain);
                 gain.connect(ctx.destination);
                 osc.start();
-                osc.stop(ctx.currentTime + 0.5);
-                console.log('[TEST] Web Audio играет! State:', ctx.state);
+                osc.stop(ctx.currentTime + 1.0); // 1 секунда
+
+                status.push('WebAudio:OK');
+                updateStatus();
+            }).catch(err => {
+                status.push('Resume:' + err.name);
+                updateStatus();
             });
         } catch(e) {
-            console.log('[TEST] Web Audio ошибка:', e);
+            status.push('WebAudio:' + e.name);
+            updateStatus();
         }
+
+        function updateStatus() {
+            iosTestBtn.innerHTML = status.join('<br>');
+            if (status.some(s => s.includes('OK'))) {
+                iosTestBtn.style.background = '#22c55e';
+            } else {
+                iosTestBtn.style.background = '#ef4444';
+            }
+        }
+
+        // Показать статус через секунду в любом случае
+        setTimeout(updateStatus, 1000);
+    };
+
+    iosTestBtn.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        runTest();
     }, { passive: false });
 
-    iosTestBtn.addEventListener('click', function() {
-        // Fallback для не-touch устройств
-        if (testAudio) {
-            testAudio.play().catch(e => console.log(e));
-        }
-    });
+    iosTestBtn.addEventListener('click', runTest);
 }
