@@ -622,6 +622,7 @@ class SoundManager {
         this.toggleBtn = document.getElementById('soundToggle');
         this.volumeSlider = document.getElementById('volumeSlider');
         this.soundHint = document.getElementById('soundHint');
+        this.unlocked = false;
 
         // Клик по подсказке включает звук
         if (this.soundHint) {
@@ -631,6 +632,19 @@ class SoundManager {
                 }
             };
         }
+
+        // Разблокировка аудио при первом касании (для мобильных)
+        const unlockAudio = () => {
+            this.unlock();
+            // Убираем слушатели после первой разблокировки
+            document.removeEventListener('touchstart', unlockAudio);
+            document.removeEventListener('touchend', unlockAudio);
+            document.removeEventListener('click', unlockAudio);
+        };
+
+        document.addEventListener('touchstart', unlockAudio, { passive: true });
+        document.addEventListener('touchend', unlockAudio, { passive: true });
+        document.addEventListener('click', unlockAudio, { passive: true });
     }
 
     // Инициализация — ОДИН РАЗ
@@ -648,27 +662,60 @@ class SoundManager {
         this.droneGain.connect(this.ctx.destination);
 
         this.initialized = true;
-        console.log('[SOUND] AudioContext создан');
+        console.log('[SOUND] AudioContext создан, state:', this.ctx.state);
     }
 
-    // Включить/выключить звук
-    toggle() {
+    // Разблокировка аудио на мобильных — вызывается при любом касании
+    async unlock() {
         if (!this.initialized) {
             this.init();
         }
 
+        if (this.ctx.state === 'suspended') {
+            try {
+                await this.ctx.resume();
+                console.log('[SOUND] AudioContext resumed:', this.ctx.state);
+            } catch (e) {
+                console.log('[SOUND] Resume failed:', e);
+            }
+        }
+
+        // Проигрываем тихий звук для полной разблокировки (iOS fix)
+        if (!this.unlocked) {
+            const buffer = this.ctx.createBuffer(1, 1, 22050);
+            const source = this.ctx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(this.ctx.destination);
+            source.start(0);
+            this.unlocked = true;
+            console.log('[SOUND] Audio unlocked');
+        }
+    }
+
+    // Включить/выключить звук
+    async toggle() {
+        // Сначала разблокируем аудио
+        await this.unlock();
+
         this.isEnabled = !this.isEnabled;
 
         if (this.isEnabled) {
-            // На мобильных AudioContext может быть suspended
+            // Убеждаемся что AudioContext активен
             if (this.ctx.state === 'suspended') {
-                this.ctx.resume().then(() => {
-                    console.log('[SOUND] AudioContext resumed');
-                    this.startDrone();
-                });
-            } else {
-                this.startDrone();
+                await this.ctx.resume();
             }
+
+            console.log('[SOUND] Включаю звук, ctx.state:', this.ctx.state);
+
+            // Небольшая задержка для iOS
+            setTimeout(() => {
+                this.startDrone();
+                // Обновляем звуки для текущей сцены
+                if (window.game && window.game.state) {
+                    this.updateForScene(window.game.state.currentScene);
+                }
+            }, 100);
+
             this.toggleBtn.textContent = '🔊 Звук';
             this.toggleBtn.classList.add('active');
             // Скрыть подсказку
