@@ -1,0 +1,825 @@
+/* === ОСНОВНЫЕ СТИЛИ === */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    /* Предотвращаем масштабирование на мобильных */
+    touch-action: manipulation;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+    min-height: 100dvh; /* Динамическая высота для мобильных браузеров */
+    background: linear-gradient(180deg, #0a0a12 0%, #1a1a2e 50%, #0f0f1a 100%);
+    color: #e0e0e0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: relative;
+    /* Предотвращаем выделение текста при тапах */
+    -webkit-user-select: none;
+    user-select: none;
+    /* Плавный скролл */
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Разрешаем выделение текста в тексте сцены */
+.scene-text {
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+/* === ФОН СЦЕНЫ === */
+.scene-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: 0;
+    transition: opacity 0.8s ease;
+}
+
+.scene-background.fade-out {
+    opacity: 0;
+}
+
+.scene-background-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0.1) 40%,
+        rgba(0, 0, 0, 0.6) 75%,
+        rgba(0, 0, 0, 0.85) 100%
+    );
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* === ЭФФЕКТ ШУМА === */
+.noise {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noise)'/%3E%3C/svg%3E");
+    animation: noiseAnim 0.5s steps(5) infinite;
+}
+
+@keyframes noiseAnim {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(-2%, -2%); }
+    50% { transform: translate(2%, 2%); }
+    75% { transform: translate(-1%, 1%); }
+}
+
+/* === МЕРЦАЮЩИЙ ФОНАРЬ === */
+.lantern {
+    position: fixed;
+    top: 30px;
+    right: 50px;
+    width: 20px;
+    height: 30px;
+    background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+    border-radius: 3px 3px 8px 8px;
+    z-index: 5;
+}
+
+.lantern::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 10px;
+    background: #333;
+    border-radius: 2px;
+}
+
+.lantern-glow {
+    position: fixed;
+    top: 20px;
+    right: 35px;
+    width: 50px;
+    height: 50px;
+    background: radial-gradient(circle, rgba(255, 200, 100, 0.4) 0%, rgba(255, 180, 80, 0.1) 40%, transparent 70%);
+    border-radius: 50%;
+    z-index: 4;
+    animation: lanternFlicker 0.15s infinite alternate;
+}
+
+@keyframes lanternFlicker {
+    0% {
+        opacity: 0.8;
+        transform: scale(1);
+        filter: blur(0px);
+    }
+    25% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(0.98);
+        filter: blur(1px);
+    }
+    75% {
+        opacity: 0.95;
+        transform: scale(1.02);
+    }
+    100% {
+        opacity: 0.85;
+        transform: scale(1);
+        filter: blur(0px);
+    }
+}
+
+/* === СНЕГ === */
+.snow {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+    background-image:
+        radial-gradient(2px 2px at 50px 50px, rgba(255,255,255,0.3), transparent),
+        radial-gradient(2px 2px at 150px 120px, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 250px 80px, rgba(255,255,255,0.3), transparent),
+        radial-gradient(2px 2px at 350px 200px, rgba(255,255,255,0.2), transparent),
+        radial-gradient(1px 1px at 450px 150px, rgba(255,255,255,0.4), transparent),
+        radial-gradient(2px 2px at 100px 300px, rgba(255,255,255,0.3), transparent),
+        radial-gradient(1px 1px at 200px 400px, rgba(255,255,255,0.2), transparent),
+        radial-gradient(2px 2px at 300px 350px, rgba(255,255,255,0.4), transparent);
+    background-size: 500px 500px;
+    animation: snowFall 8s linear infinite;
+}
+
+@keyframes snowFall {
+    0% { background-position: 0 0; }
+    100% { background-position: 100px 500px; }
+}
+
+/* === КОНТЕЙНЕР === */
+.container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px;
+    /* Safe area для iPhone с вырезом */
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 10;
+}
+
+/* === ПАНЕЛЬ СТАТИСТИКИ === */
+.stats-panel {
+    background: rgba(0, 0, 0, 0.3);
+    border: none;
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    backdrop-filter: blur(8px);
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stat-icon {
+    font-size: 20px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stat-bar {
+    width: 80px;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.stat-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease, background 0.3s ease;
+}
+
+.stress-fill {
+    background: linear-gradient(90deg, #4ade80, #fbbf24, #ef4444);
+    width: 0%;
+}
+
+.stat-value {
+    font-weight: bold;
+    min-width: 40px;
+}
+
+.stat-value.money {
+    color: #4ade80;
+}
+
+.inventory-stat {
+    flex: 1;
+}
+
+.inventory {
+    display: flex;
+    gap: 8px;
+}
+
+.inventory-item {
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: transform 0.2s;
+}
+
+.inventory-item:hover {
+    transform: scale(1.1);
+}
+
+.inventory-slot {
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    border-radius: 6px;
+}
+
+/* === ИГРОВОЙ ЭКРАН === */
+.game-screen {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+}
+
+.scene-text {
+    flex: 1;
+    font-size: 18px;
+    line-height: 1.8;
+    color: #ffffff;
+    margin-bottom: 25px;
+    white-space: pre-line;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 0, 0, 0.8);
+    max-height: 45vh;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+/* === ТАЙМЕР === */
+.timer-container {
+    position: relative;
+    height: 6px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 3px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.timer-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    border-radius: 3px;
+    width: 100%;
+    transition: width 0.1s linear;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.timer-bar.warning {
+    background: linear-gradient(90deg, #f59e0b, #ef4444);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+.timer-text {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    font-weight: bold;
+    color: #888;
+}
+
+.timer-container.hidden {
+    display: none;
+}
+
+/* === КНОПКИ ВЫБОРА === */
+.choices {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.choice-btn {
+    background: rgba(0, 0, 0, 0.4);
+    border: none;
+    border-radius: 8px;
+    padding: 15px 20px;
+    color: #ffffff;
+    font-size: 15px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(4px);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.choice-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(100, 150, 200, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.choice-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateX(5px);
+}
+
+.choice-btn:hover::before {
+    left: 100%;
+}
+
+.choice-btn:active {
+    transform: translateX(5px) scale(0.98);
+}
+
+.choice-btn.hesitate {
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.choice-effect {
+    font-size: 12px;
+    color: #888;
+    margin-top: 5px;
+}
+
+.choice-effect .positive {
+    color: #4ade80;
+}
+
+.choice-effect .negative {
+    color: #ef4444;
+}
+
+/* === ЭКРАН ФИНАЛА === */
+.ending-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px;
+}
+
+.ending-screen.hidden {
+    display: none;
+}
+
+.ending-title {
+    font-size: 48px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    animation: titleGlow 2s ease-in-out infinite alternate;
+}
+
+.ending-title.good {
+    color: #4ade80;
+    text-shadow: 0 0 30px rgba(74, 222, 128, 0.5);
+}
+
+.ending-title.bad {
+    color: #ef4444;
+    text-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+}
+
+@keyframes titleGlow {
+    0% { opacity: 0.8; }
+    100% { opacity: 1; }
+}
+
+.ending-text {
+    font-size: 18px;
+    line-height: 1.8;
+    margin-bottom: 30px;
+    max-width: 500px;
+    color: #bbb;
+}
+
+.ending-stats {
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 12px;
+    padding: 20px 30px;
+    margin-bottom: 30px;
+    text-align: left;
+    backdrop-filter: blur(8px);
+}
+
+.ending-stat {
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ending-stat:last-child {
+    border-bottom: none;
+}
+
+/* === КНОПКИ УПРАВЛЕНИЯ === */
+.control-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+.btn {
+    background: rgba(0, 0, 0, 0.3);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
+}
+
+.btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+.save-btn:hover {
+    background: rgba(74, 222, 128, 0.2);
+}
+
+.reset-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.restart-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: white;
+    padding: 15px 40px;
+    font-size: 16px;
+    font-weight: bold;
+    backdrop-filter: blur(4px);
+}
+
+.restart-btn:hover {
+    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* === ЗВУКОВОЙ КОНТРОЛЬ === */
+.sound-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    justify-content: center;
+}
+
+.sound-btn {
+    min-width: 100px;
+}
+
+.sound-btn.active {
+    background: rgba(74, 222, 128, 0.2);
+}
+
+.volume-slider {
+    width: 100px;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+}
+
+/* === АДАПТИВ === */
+
+/* Планшеты */
+@media (max-width: 900px) {
+    .container {
+        max-width: 100%;
+        padding: 15px;
+    }
+}
+
+/* Телефоны */
+@media (max-width: 600px) {
+    body {
+        font-size: 16px;
+        -webkit-text-size-adjust: 100%;
+    }
+
+    .container {
+        padding: 10px;
+        padding-bottom: 20px;
+    }
+
+    /* Панель статистики — компактнее */
+    .stats-panel {
+        padding: 10px 12px;
+        gap: 8px;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .stat {
+        justify-content: space-between;
+    }
+
+    .stat-bar {
+        width: 80px;
+        flex-shrink: 0;
+    }
+
+    .stat-label {
+        font-size: 11px;
+    }
+
+    .stat-value {
+        font-size: 14px;
+    }
+
+    .inventory-stat {
+        border-top: 1px solid rgba(255,255,255,0.1);
+        padding-top: 8px;
+        margin-top: 4px;
+    }
+
+    .inventory {
+        justify-content: flex-end;
+    }
+
+    /* Игровой экран */
+    .game-screen {
+        padding: 15px 10px;
+    }
+
+    .scene-text {
+        font-size: 16px;
+        line-height: 1.7;
+        max-height: 40vh;
+        margin-bottom: 20px;
+    }
+
+    /* Кнопки выбора — крупнее для пальцев */
+    .choice-btn {
+        padding: 16px 18px;
+        font-size: 15px;
+        min-height: 54px;
+        /* Предотвращаем случайные нажатия */
+        -webkit-tap-highlight-color: rgba(255,255,255,0.1);
+        touch-action: manipulation;
+    }
+
+    .choice-btn:active {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(0.98);
+    }
+
+    .choice-effect {
+        font-size: 11px;
+        margin-top: 6px;
+    }
+
+    /* Кнопки управления */
+    .control-buttons {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .btn {
+        padding: 12px 16px;
+        font-size: 13px;
+        flex: 1;
+        min-width: 100px;
+        text-align: center;
+    }
+
+    /* Звуковой контроль */
+    .sound-control {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .sound-btn {
+        flex: 1;
+    }
+
+    .volume-slider {
+        width: 100%;
+        order: 3;
+        margin-top: 5px;
+    }
+
+    /* Скрываем тест-кнопку на мобильных */
+    .sound-control .btn[onclick*="testPiano"] {
+        display: none;
+    }
+
+    /* Фонарь скрыт */
+    .lantern, .lantern-glow {
+        display: none;
+    }
+
+    /* Финальный экран */
+    .ending-screen {
+        padding: 20px 15px;
+    }
+
+    .ending-title {
+        font-size: 32px;
+        letter-spacing: 3px;
+    }
+
+    .ending-text {
+        font-size: 16px;
+        line-height: 1.7;
+    }
+
+    .ending-stats {
+        padding: 15px;
+        width: 100%;
+    }
+
+    .ending-stat {
+        font-size: 14px;
+        gap: 15px;
+    }
+
+    .restart-btn {
+        width: 100%;
+        padding: 16px 30px;
+    }
+}
+
+/* Очень маленькие экраны */
+@media (max-width: 360px) {
+    .scene-text {
+        font-size: 15px;
+    }
+
+    .choice-btn {
+        padding: 14px 12px;
+        font-size: 14px;
+    }
+
+    .stats-panel {
+        padding: 8px 10px;
+    }
+}
+
+/* Ландшафтная ориентация на телефонах */
+@media (max-height: 500px) and (orientation: landscape) {
+    .stats-panel {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .scene-text {
+        max-height: 30vh;
+    }
+
+    .inventory-stat {
+        border-top: none;
+        padding-top: 0;
+        margin-top: 0;
+    }
+}
+
+/* === ПОДСКАЗКА ДЛЯ ЗВУКА === */
+.sound-hint {
+    text-align: center;
+    padding: 12px 20px;
+    margin-top: 15px;
+    background: rgba(139, 92, 246, 0.15);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    animation: pulseHint 3s ease-in-out infinite;
+    cursor: pointer;
+    transition: opacity 0.5s ease;
+}
+
+.sound-hint:hover {
+    background: rgba(139, 92, 246, 0.25);
+}
+
+.sound-hint.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+@keyframes pulseHint {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+}
+
+@media (max-width: 600px) {
+    .sound-hint {
+        font-size: 13px;
+        padding: 10px 15px;
+    }
+}
+
+/* === УТИЛИТЫ === */
+.hidden {
+    display: none !important;
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0a0a12">
+    <meta name="description" content="Криуши — хоррор визуальная новелла">
+    <title>Криуши</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Фон сцены -->
+    <div class="scene-background" id="sceneBackground"></div>
+    <div class="scene-background-overlay"></div>
+
+    <!-- Эффект шума -->
+    <div class="noise"></div>
+
+    <!-- Мерцающий фонарь -->
+    <div class="lantern"></div>
+    <div class="lantern-glow"></div>
+
+    <!-- Снег -->
+    <div class="snow"></div>
+
+    <!-- Главный контейнер -->
+    <div class="container">
+        <!-- Панель статистики -->
+        <div class="stats-panel">
+            <div class="stat">
+                <span class="stat-icon">😰</span>
+                <span class="stat-label">Стресс</span>
+                <div class="stat-bar">
+                    <div class="stat-fill stress-fill" id="stressBar"></div>
+                </div>
+                <span class="stat-value" id="stressValue">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-icon">💰</span>
+                <span class="stat-label">Деньги</span>
+                <span class="stat-value money" id="moneyValue">1000 ₽</span>
+            </div>
+            <div class="stat inventory-stat">
+                <span class="stat-icon">🎒</span>
+                <span class="stat-label">Инвентарь</span>
+                <div class="inventory" id="inventory"></div>
+            </div>
+        </div>
+
+        <!-- Игровой экран -->
+        <div class="game-screen" id="gameScreen">
+            <!-- Текст сцены -->
+            <div class="scene-text" id="sceneText">
+                Загрузка...
+            </div>
+
+            <!-- Таймер -->
+            <div class="timer-container" id="timerContainer">
+                <div class="timer-bar" id="timerBar"></div>
+                <span class="timer-text" id="timerText">6</span>
+            </div>
+
+            <!-- Кнопки выбора -->
+            <div class="choices" id="choices"></div>
+        </div>
+
+        <!-- Экран финала -->
+        <div class="ending-screen hidden" id="endingScreen">
+            <h1 class="ending-title" id="endingTitle">КОНЕЦ</h1>
+            <p class="ending-text" id="endingText"></p>
+            <div class="ending-stats" id="endingStats"></div>
+            <button class="btn restart-btn" onclick="game.restart()">Начать заново</button>
+        </div>
+
+        <!-- Кнопки управления -->
+        <div class="control-buttons">
+            <button class="btn save-btn" onclick="game.save()">💾 Сохранить</button>
+            <button class="btn reset-btn" onclick="game.reset()">🗑️ Сбросить</button>
+        </div>
+
+        <!-- Звуковой контроль -->
+        <div class="sound-control" id="soundControl">
+            <button class="btn sound-btn" id="soundToggle" onclick="game.sound.toggle()">🔇 Звук</button>
+            <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50" oninput="game.sound.setVolume(this.value / 100)">
+        </div>
+
+        <!-- Подсказка для звука -->
+        <div class="sound-hint" id="soundHint">
+            🎧 Включите звук для полного погружения
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
