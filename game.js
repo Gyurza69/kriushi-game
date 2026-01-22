@@ -724,16 +724,11 @@ class SoundManager {
             resumePromise.then(() => {
                 console.log('[SOUND] Context resumed, state:', this.ctx.state);
 
-                // Тестовый бип для проверки (короткий)
-                this.playTestBeep();
-
-                // Запускаем основные звуки с задержкой
-                setTimeout(() => {
-                    this.startDrone();
-                    if (window.game && window.game.state) {
-                        this.updateForScene(window.game.state.currentScene);
-                    }
-                }, 200);
+                // Запускаем основные звуки
+                this.startDrone();
+                if (window.game && window.game.state) {
+                    this.updateForScene(window.game.state.currentScene);
+                }
             });
 
             this.toggleBtn.textContent = '🔊 Звук';
@@ -753,31 +748,6 @@ class SoundManager {
         }
     }
 
-    // Тестовый звук для проверки работы аудио
-    playTestBeep() {
-        if (!this.ctx) return;
-
-        try {
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-
-            osc.type = 'sine';
-            osc.frequency.value = 440; // Нота Ля — хорошо слышна на любых динамиках
-
-            gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
-
-            osc.connect(gain);
-            gain.connect(this.ctx.destination);
-
-            osc.start(this.ctx.currentTime);
-            osc.stop(this.ctx.currentTime + 0.3);
-
-            console.log('[SOUND] Test beep played');
-        } catch (e) {
-            console.log('[SOUND] Test beep error:', e);
-        }
-    }
 
     setVolume(value) {
         this.volume = value;
@@ -1788,82 +1758,3 @@ class NovelGame {
 // Запуск игры
 const game = new NovelGame();
 
-// iOS тестовая кнопка
-const iosTestBtn = document.getElementById('iosTestBtn');
-const testAudio = document.getElementById('testAudio');
-
-if (iosTestBtn) {
-    const runTest = function() {
-        // Вибрация чтобы понять что нажатие сработало
-        if (navigator.vibrate) {
-            navigator.vibrate(100);
-        }
-
-        iosTestBtn.textContent = '⏳ Тестирую...';
-        iosTestBtn.style.background = '#f59e0b';
-
-        let status = [];
-
-        // Способ 1: HTML5 Audio
-        if (testAudio) {
-            testAudio.currentTime = 0;
-            testAudio.volume = 1.0;
-            testAudio.play().then(() => {
-                status.push('HTML5:OK');
-                updateStatus();
-            }).catch(err => {
-                status.push('HTML5:' + err.name);
-                updateStatus();
-            });
-        }
-
-        // Способ 2: Web Audio API
-        try {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            const ctx = new AudioContext();
-
-            status.push('Ctx:' + ctx.state);
-
-            ctx.resume().then(() => {
-                status.push('Resume:' + ctx.state);
-
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.frequency.value = 440;
-                gain.gain.value = 1.0; // Максимальная громкость
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 1.0); // 1 секунда
-
-                status.push('WebAudio:OK');
-                updateStatus();
-            }).catch(err => {
-                status.push('Resume:' + err.name);
-                updateStatus();
-            });
-        } catch(e) {
-            status.push('WebAudio:' + e.name);
-            updateStatus();
-        }
-
-        function updateStatus() {
-            iosTestBtn.innerHTML = status.join('<br>');
-            if (status.some(s => s.includes('OK'))) {
-                iosTestBtn.style.background = '#22c55e';
-            } else {
-                iosTestBtn.style.background = '#ef4444';
-            }
-        }
-
-        // Показать статус через секунду в любом случае
-        setTimeout(updateStatus, 1000);
-    };
-
-    iosTestBtn.addEventListener('touchend', function(e) {
-        e.preventDefault();
-        runTest();
-    }, { passive: false });
-
-    iosTestBtn.addEventListener('click', runTest);
-}
