@@ -630,26 +630,39 @@ class SoundManager {
         this.soundHint = document.getElementById('soundHint');
         this.unlocked = false;
 
-        // Клик по подсказке включает звук
-        if (this.soundHint) {
-            this.soundHint.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                if (!this.isEnabled) {
-                    this.toggle();
-                }
-            });
-            this.soundHint.onclick = () => {
-                if (!this.isEnabled) {
-                    this.toggle();
-                }
-            };
-        }
+        // Универсальный обработчик для touch и click
+        const addTouchHandler = (element, callback) => {
+            if (!element) return;
 
-        // Кнопка звука — специальный обработчик для iOS
-        if (this.toggleBtn) {
-            this.toggleBtn.addEventListener('touchend', (e) => {
+            let touched = false;
+
+            element.addEventListener('touchend', (e) => {
                 e.preventDefault();
-                this.toggle();
+                touched = true;
+                callback();
+                // Сбрасываем флаг через небольшую задержку
+                setTimeout(() => { touched = false; }, 300);
+            }, { passive: false });
+
+            element.addEventListener('click', (e) => {
+                // Игнорируем click если был touch
+                if (touched) return;
+                callback();
+            });
+        };
+
+        // Кнопка звука
+        addTouchHandler(this.toggleBtn, () => this.toggle());
+
+        // Подсказка
+        addTouchHandler(this.soundHint, () => {
+            if (!this.isEnabled) this.toggle();
+        });
+
+        // Слайдер громкости
+        if (this.volumeSlider) {
+            this.volumeSlider.addEventListener('input', () => {
+                this.setVolume(this.volumeSlider.value / 100);
             });
         }
     }
@@ -698,27 +711,30 @@ class SoundManager {
             this.init();
         }
 
-        // 2. Resume если suspended
-        if (this.ctx.state === 'suspended') {
-            this.ctx.resume();
-        }
+        // 2. Resume если suspended (iOS требует)
+        const resumePromise = this.ctx.resume();
 
-        // 3. Разблокировка iOS
-        this.unlockiOS();
-
-        // 4. Переключаем состояние
+        // 3. Переключаем состояние
         this.isEnabled = !this.isEnabled;
 
         console.log('[SOUND] Toggle:', this.isEnabled, 'ctx.state:', this.ctx.state);
 
         if (this.isEnabled) {
-            // Запускаем звуки
-            this.startDrone();
+            // Ждём resume и запускаем звук
+            resumePromise.then(() => {
+                console.log('[SOUND] Context resumed, state:', this.ctx.state);
 
-            // Обновляем для текущей сцены
-            if (window.game && window.game.state) {
-                this.updateForScene(window.game.state.currentScene);
-            }
+                // Тестовый бип для проверки (короткий)
+                this.playTestBeep();
+
+                // Запускаем основные звуки с задержкой
+                setTimeout(() => {
+                    this.startDrone();
+                    if (window.game && window.game.state) {
+                        this.updateForScene(window.game.state.currentScene);
+                    }
+                }, 200);
+            });
 
             this.toggleBtn.textContent = '🔊 Звук';
             this.toggleBtn.classList.add('active');
@@ -734,6 +750,32 @@ class SoundManager {
             if (this.soundHint) {
                 this.soundHint.classList.remove('hidden');
             }
+        }
+    }
+
+    // Тестовый звук для проверки работы аудио
+    playTestBeep() {
+        if (!this.ctx) return;
+
+        try {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.value = 440; // Нота Ля — хорошо слышна на любых динамиках
+
+            gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(this.ctx.currentTime);
+            osc.stop(this.ctx.currentTime + 0.3);
+
+            console.log('[SOUND] Test beep played');
+        } catch (e) {
+            console.log('[SOUND] Test beep error:', e);
         }
     }
 
