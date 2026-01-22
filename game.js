@@ -599,24 +599,30 @@ class SoundManager {
         this.reverbNode = null;
         this.currentSceneId = 's1_home';
 
-        // === ПАРАМЕТРЫ СТРАХА (можно крутить) ===
+        // Определяем мобильное устройство
+        this.isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        // === ПАРАМЕТРЫ СТРАХА ===
+        // На мобильных поднимаем частоты (динамики телефона не воспроизводят <100 Hz)
         this.FEAR = {
             // DRONE
-            droneFreq: 55,           // Основная частота дрона (40-70 Hz)
-            droneHarmonicFreq: 140,  // Гармоника (120-180 Hz)
-            droneVolume: 0.08,       // Громкость дрона (0.05-0.15)
-            droneHarmonicVol: 0.04,  // Громкость гармоники
-            droneLFOSpeed: 0.08,     // Скорость колебания (0.05-0.15, период 8-15 сек)
-            droneLFODepth: 0.4,      // Глубина колебания (0-1)
+            droneFreq: this.isMobile ? 110 : 55,           // Основная частота
+            droneHarmonicFreq: this.isMobile ? 220 : 140,  // Гармоника
+            droneVolume: this.isMobile ? 0.15 : 0.08,      // Громкость (выше на мобильных)
+            droneHarmonicVol: this.isMobile ? 0.10 : 0.04, // Громкость гармоники
+            droneLFOSpeed: 0.08,     // Скорость колебания
+            droneLFODepth: 0.4,      // Глубина колебания
 
             // ВСПЛЕСКИ
-            surgeMinInterval: 8000,  // Мин. пауза между всплесками (мс)
-            surgeMaxInterval: 25000, // Макс. пауза
-            surgeVolume: 0.15,       // Громкость всплеска
-            surgeDetune: 35,         // Расстройка (cents)
-            surgeDissonance: 0.6,    // Вероятность диссонанса (0-1)
-            surgeDuration: 4,        // Длительность всплеска (сек)
+            surgeMinInterval: 8000,
+            surgeMaxInterval: 25000,
+            surgeVolume: this.isMobile ? 0.25 : 0.15,      // Громче на мобильных
+            surgeDetune: 35,
+            surgeDissonance: 0.6,
+            surgeDuration: 4,
         };
+
+        console.log('[SOUND] Mobile:', this.isMobile, 'Drone freq:', this.FEAR.droneFreq);
 
         // UI элементы
         this.toggleBtn = document.getElementById('soundToggle');
@@ -626,6 +632,12 @@ class SoundManager {
 
         // Клик по подсказке включает звук
         if (this.soundHint) {
+            this.soundHint.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                if (!this.isEnabled) {
+                    this.toggle();
+                }
+            });
             this.soundHint.onclick = () => {
                 if (!this.isEnabled) {
                     this.toggle();
@@ -633,92 +645,84 @@ class SoundManager {
             };
         }
 
-        // Разблокировка аудио при первом касании (для мобильных)
-        const unlockAudio = () => {
-            this.unlock();
-            // Убираем слушатели после первой разблокировки
-            document.removeEventListener('touchstart', unlockAudio);
-            document.removeEventListener('touchend', unlockAudio);
-            document.removeEventListener('click', unlockAudio);
-        };
-
-        document.addEventListener('touchstart', unlockAudio, { passive: true });
-        document.addEventListener('touchend', unlockAudio, { passive: true });
-        document.addEventListener('click', unlockAudio, { passive: true });
+        // Кнопка звука — специальный обработчик для iOS
+        if (this.toggleBtn) {
+            this.toggleBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.toggle();
+            });
+        }
     }
 
-    // Инициализация — ОДИН РАЗ
+    // Инициализация — создаём AudioContext (должна вызываться из обработчика события!)
     init() {
-        if (this.initialized) return;
+        if (this.ctx) return;
 
-        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        // iOS Safari требует webkit prefix
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioContext();
+
         this.masterGain = this.ctx.createGain();
         this.masterGain.gain.value = this.volume;
         this.masterGain.connect(this.ctx.destination);
 
-        // Gain для дрона — отдельный, не зависит от master
+        // Gain для дрона
         this.droneGain = this.ctx.createGain();
-        this.droneGain.gain.value = 0; // Начинаем с тишины
+        this.droneGain.gain.value = 0;
         this.droneGain.connect(this.ctx.destination);
 
         this.initialized = true;
         console.log('[SOUND] AudioContext создан, state:', this.ctx.state);
     }
 
-    // Разблокировка аудио на мобильных — вызывается при любом касании
-    async unlock() {
-        if (!this.initialized) {
+    // Разблокировка для iOS — проигрываем тихий звук
+    unlockiOS() {
+        if (!this.ctx || this.unlocked) return;
+
+        // Создаём и проигрываем пустой буфер
+        const buffer = this.ctx.createBuffer(1, 1, 22050);
+        const source = this.ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(this.ctx.destination);
+        source.start(0);
+        source.stop(0.001);
+
+        this.unlocked = true;
+        console.log('[SOUND] iOS unlocked');
+    }
+
+    // Включить/выключить звук — СИНХРОННО для iOS
+    toggle() {
+        // 1. Создаём AudioContext синхронно внутри обработчика события
+        if (!this.ctx) {
             this.init();
         }
 
+        // 2. Resume если suspended
         if (this.ctx.state === 'suspended') {
-            try {
-                await this.ctx.resume();
-                console.log('[SOUND] AudioContext resumed:', this.ctx.state);
-            } catch (e) {
-                console.log('[SOUND] Resume failed:', e);
-            }
+            this.ctx.resume();
         }
 
-        // Проигрываем тихий звук для полной разблокировки (iOS fix)
-        if (!this.unlocked) {
-            const buffer = this.ctx.createBuffer(1, 1, 22050);
-            const source = this.ctx.createBufferSource();
-            source.buffer = buffer;
-            source.connect(this.ctx.destination);
-            source.start(0);
-            this.unlocked = true;
-            console.log('[SOUND] Audio unlocked');
-        }
-    }
+        // 3. Разблокировка iOS
+        this.unlockiOS();
 
-    // Включить/выключить звук
-    async toggle() {
-        // Сначала разблокируем аудио
-        await this.unlock();
-
+        // 4. Переключаем состояние
         this.isEnabled = !this.isEnabled;
 
+        console.log('[SOUND] Toggle:', this.isEnabled, 'ctx.state:', this.ctx.state);
+
         if (this.isEnabled) {
-            // Убеждаемся что AudioContext активен
-            if (this.ctx.state === 'suspended') {
-                await this.ctx.resume();
+            // Запускаем звуки
+            this.startDrone();
+
+            // Обновляем для текущей сцены
+            if (window.game && window.game.state) {
+                this.updateForScene(window.game.state.currentScene);
             }
-
-            console.log('[SOUND] Включаю звук, ctx.state:', this.ctx.state);
-
-            // Небольшая задержка для iOS
-            setTimeout(() => {
-                this.startDrone();
-                // Обновляем звуки для текущей сцены
-                if (window.game && window.game.state) {
-                    this.updateForScene(window.game.state.currentScene);
-                }
-            }, 100);
 
             this.toggleBtn.textContent = '🔊 Звук';
             this.toggleBtn.classList.add('active');
-            // Скрыть подсказку
+
             if (this.soundHint) {
                 this.soundHint.classList.add('hidden');
             }
@@ -726,7 +730,7 @@ class SoundManager {
             this.stopAll();
             this.toggleBtn.textContent = '🔇 Звук';
             this.toggleBtn.classList.remove('active');
-            // Показать подсказку снова
+
             if (this.soundHint) {
                 this.soundHint.classList.remove('hidden');
             }
